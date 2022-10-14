@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import './widgets/chart.dart';
 import './widgets/new_transaction.dart';
 import './widgets/transaction_list.dart';
 import './models/transaction.dart';
 
-void main() => runApp(MyApp());
+void main() {
+  // WidgetsFlutterBinding.ensureInitialized();
+  // SystemChrome.setPreferredOrientations([
+  //   DeviceOrientation.portraitUp,
+  //   DeviceOrientation.portraitDown,
+  // ]);
+  runApp(MyApp());
+}
 
 class MyApp extends StatelessWidget {
   @override
@@ -69,6 +77,7 @@ class _MyHomePageState extends State<MyHomePage> {
     //   date: DateTime.now(),
     // ),
   ];
+  bool _showChart = false;
 
   List<Transaction> get _recentTransactions {
     return _userTransactions
@@ -114,6 +123,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
     final appBar = AppBar(
       title: const Text('Personal Expenses'),
       actions: <Widget>[
@@ -122,10 +133,17 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: const Icon(Icons.add))
       ],
     );
-
     final availableHeight = MediaQuery.of(context).size.height -
         appBar.preferredSize.height -
         MediaQuery.of(context).padding.top;
+
+    final txListWidget = Container(
+      height: availableHeight * 0.7,
+      child: TransactionList(
+        transactions: _userTransactions,
+        removeCallback: _deleteTransaction,
+      ),
+    );
 
     return Scaffold(
       floatingActionButton: FloatingActionButton(
@@ -139,16 +157,34 @@ class _MyHomePageState extends State<MyHomePage> {
             // mainAxisAlignment: MainAxisAlignment.start,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              Container(
-                height: availableHeight * 0.35,
-                child: Chart(recentTransactions: _recentTransactions),
-              ),
-              Container(
-                height: availableHeight * 0.65,
-                child: TransactionList(
-                    transactions: _userTransactions,
-                    removeCallback: _deleteTransaction),
-              ),
+              if (isLandscape)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Text('Show Chart'),
+                    Switch(
+                      value: _showChart,
+                      onChanged: (val) {
+                        setState(() {
+                          _showChart = val;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              if (!isLandscape)
+                Container(
+                  height: availableHeight * 0.3,
+                  child: Chart(recentTransactions: _recentTransactions),
+                ),
+              if (!isLandscape) txListWidget,
+              if (isLandscape)
+                _showChart
+                    ? Container(
+                        height: availableHeight * 0.7,
+                        child: Chart(recentTransactions: _recentTransactions),
+                      )
+                    : txListWidget
             ]),
       ),
     );
